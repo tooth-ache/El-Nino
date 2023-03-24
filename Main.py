@@ -20,7 +20,7 @@ def f(state, t):
             -u * T_e / (2 * delta_x) - A * (T_w - T_star) ]
 
 
-t = np.arange(0, 100, .01)
+t = np.arange(0, 20, .01)
 state_0 = [10, 10, 14]
 y = odeint(f, state_0, t)
 
@@ -32,8 +32,8 @@ dT = []
 for i in range(len(y)):
     dT.append(y[i][1] - y[i][2])
 
-plt.plot(t, u)
+#plt.plot(t, u)
 #plt.plot(t, dT)
-#plt.plot(t, y[0,:], "--")
+plt.plot(t, y[:, 0])
 #plt.ylim((-400,400))
 plt.show()
