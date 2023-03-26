@@ -26,7 +26,7 @@ def f(state, t):
 
 dt = .00001
 t_start = 0
-t_end = 1000
+t_end = 100
 
 t = np.arange(t_start, t_end, dt)
 state_0 = [10, 10, 14] # initial conditions
