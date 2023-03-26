@@ -194,8 +194,8 @@ def standard_dev(mylist):
     return np.sqrt(my_sum/list_length)
 
 # ignoring th first 10 events
-average_T = mean(times)
-dev_T = standard_dev(times)
+average_T = mean(times[11:])
+dev_T = standard_dev(times[11:])
 print("The mean time between ENSO events is: {} years".format(average_T))
 print("The standard deviation of ENSO events is: {}".format(dev_T))
 
