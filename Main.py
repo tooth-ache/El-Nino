@@ -29,8 +29,6 @@ dt = .0001
 t_start = 0 # this will allways be 0
 t_end = 100 # this will be for how many years we want to see this run # check 40 and 50
 
-
-
 t = np.arange(t_start, t_end, dt)
 state_0 = [10, 10, 14] # initial conditions
 y = odeint(f, state_0, t) # y is a list with elemets that are list with 3 entries containing u, Te, Tw for each time step
@@ -42,6 +40,7 @@ Tw = y[:,2]
 
 # first plots
 
+"""
 plt.plot(t, u)
 plt.title("Current velocity against time ({} years)".format(t_end))
 plt.xlabel("Time t (years)")
@@ -49,7 +48,7 @@ plt.ylabel("Current Velocity u ") # 10^3km / year  units?
 plt.ylim((-400,400))
 plt.grid(axis = 'y')
 #plt.show()
-
+"""
 """
 plt.plot(t, Te - Tw)
 plt.title("Difference in Temp against time ({} years)".format(t_end))
@@ -156,11 +155,13 @@ roots = iterate_find_root(du, t_start, t_end, .2 ,100, 5)
 roots.sort()
 #print(roots)
 
+"""
 for i in range(len(roots)):
     plt.scatter(roots[i], func_u(roots[i]))
-   
-# code for single root finder
+plt.show()
+"""
 
+# code for single root finder
 """rot = find_root(83, 84, du)
 print(rot)
 print(func_u(rot))
@@ -202,6 +203,15 @@ print("The standard deviation of ENSO events is: {}".format(dev_T))
 # this will plot the derivative of u
 #plt.plot(t[1:-1], du, "--", label = "dfs")
 
+# histgram plot # make nicer
+"""
+plt.hist(times_between_ENSO, bins= 30)
+plt.ylabel("Number of ENSO events")
+plt.xlabel("Time beteen ENSO events")
+plt.show()
+"""
+
+plt.plot(Te - Tw, u)
 plt.show()
 
 """
