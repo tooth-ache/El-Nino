@@ -24,7 +24,7 @@ def f(state, t):
 
     return du, dTe, dTw 
 
-dt = .0001
+dt = .00001 # resolution
 
 t_start = 0 # this will allways be 0
 t_end = 100 # this will be for how many years we want to see this run # check 40 and 50
@@ -40,7 +40,6 @@ Tw = y[:,2]
 
 # first plots
 
-"""
 plt.plot(t, u)
 plt.title("Current velocity against time ({} years)".format(t_end))
 plt.xlabel("Time t (years)")
@@ -48,7 +47,7 @@ plt.ylabel("Current Velocity u ") # 10^3km / year  units?
 plt.ylim((-400,400))
 plt.grid(axis = 'y')
 #plt.show()
-"""
+
 """
 plt.plot(t, Te - Tw)
 plt.title("Difference in Temp against time ({} years)".format(t_end))
@@ -57,27 +56,7 @@ plt.ylabel("T_e - T_w ")
 plt.ylim((-30,30))
 plt.show()
 """
-"""
-# renaming variables to integrating for longer times
 
-dt = .01
-t_start = 0
-t_end = 1000
-t = np.arange(t_start, t_end, dt)
-state_0 = [10, 10, 14] 
-y = odeint(f, state_0, t)
-
-u = y[:,0]
-Te = y[:,1] 
-Tw = y[:,2]
-
-plt.plot(t, u)
-plt.title("Current velocity against time ({} years)".format(t_end))
-plt.xlabel("Time t (years)")
-plt.ylabel("Current Velocity u ") # 10^3km / year  units?
-plt.ylim((-400,400))
-plt.show()
-"""
 # function for taking the derivative of a function (symmetric derivative)
 def diff(func, x, dx): 
     dfs = np.zeros(len(x) - 2)
@@ -85,15 +64,20 @@ def diff(func, x, dx):
         dfs[i-1] = (func[i + 1] - func[i - 1]) / (2 * dx)
     return dfs
 
-# this variable decides on how many significant figures we care about for rounding purposes
-sigfig = 1/dt
+def make_func(list_func, x):
+    return list_func[int(round(x/dt))]
 
+# fix single root finder (maybe doesnt sometimes work for decreasing derivatives)
 # function for root finding (bisection method) 
 def find_root(a, b, func): 
     x1 = 0
     x2 = 0
     x3 = 0
-    if func[int(round(sigfig*a) / (sigfig * dt))] < 0:
+    if a * b > 0:
+        x3 = "None"
+        run = False
+
+    if make_func(func, a) < 0:
         x1 = a
         x2 = b
     else:
@@ -105,7 +89,7 @@ def find_root(a, b, func):
     while run:
         times_run += 1
         x3 = (x1 + x2)/2
-        if func[int(round(sigfig * x3) / (sigfig * dt))] < 0:
+        if make_func(func, x3) < 0:
             x1 = x3
         else:
             x2 = x3
@@ -119,8 +103,8 @@ def find_root(a, b, func):
 
 du = diff(u, t, dt)
 
-def func_u(t):
-    return u[int(round(sigfig * t)/ (sigfig * dt))] # remove the / (sigfig * dt) possibly
+def func_u(x):
+    return make_func(u, x) # remove the / (sigfig * dt) possibly
 
 # idea: run the rootfinder of increments of .5 years in t to find roots, there will 
 # be spots in which there is no root but rootfinder should stop after a while
@@ -142,26 +126,25 @@ def iterate_find_root(dx ,start_step, end_step, increment, min_y, num_iterations
                     roots.append(root)
 
     # removes entries in roots which are very close to eachother in and makes a new set
-    roots.sort()
-    good_roots = roots
-    for i, root_1 in enumerate(roots):
-        for root_2 in roots[i+1:]:
-            if root_2 - root_1 < .1:
-                good_roots.remove(root_2)
+    if num_iterations > 0:
+        roots.sort()
+        good_roots = roots
+        for i, root_1 in enumerate(roots):
+            for root_2 in roots[i+1:]:
+                if root_2 - root_1 < .1:
+                    good_roots.remove(root_2)
 
     return good_roots
 
-roots = iterate_find_root(du, t_start, t_end, .2 ,100, 5)
+roots = iterate_find_root(du, t_start, t_end, .01 , 100, 2)
 roots.sort()
 #print(roots)
 
-"""
 for i in range(len(roots)):
     plt.scatter(roots[i], func_u(roots[i]))
-plt.show()
-"""
-
+   
 # code for single root finder
+
 """rot = find_root(83, 84, du)
 print(rot)
 print(func_u(rot))
@@ -173,9 +156,9 @@ num_of_elNinos = len(roots)
 print("The number of ENSO events in {} years is: {}".format(t_end, num_of_elNinos))
 
 # calculating the periods of time that elapses between the El-Nino events
-times = [] # periods of time
+times_between_ENSO = [] # periods of time
 for i in range(num_of_elNinos - 1):
-    times.append(roots[i+1] - roots[i]) # roots is sorted so dont need abs() function
+    times_between_ENSO.append(roots[i+1] - roots[i]) # roots is sorted so dont need abs() function
 
 # calculates the average of a list of numbers
 def mean(mylist):
@@ -194,14 +177,15 @@ def standard_dev(mylist):
         my_sum += (mylist[i] - average)**2
     return np.sqrt(my_sum/list_length)
 
-# to ignore the first 10 events repace times with times[11:]
-average_T = mean(times)
-dev_T = standard_dev(times)
+# to ignore the first 10 events repace times_between_ENSO with times_between_ENSO[11:]
+average_T = mean(times_between_ENSO)
+dev_T = standard_dev(times_between_ENSO)
 print("The mean time between ENSO events is: {} years".format(average_T))
 print("The standard deviation of ENSO events is: {}".format(dev_T))
 
 # this will plot the derivative of u
 #plt.plot(t[1:-1], du, "--", label = "dfs")
+plt.show()
 
 # histgram plot # make nicer
 """
@@ -211,8 +195,10 @@ plt.xlabel("Time beteen ENSO events")
 plt.show()
 """
 
-plt.plot(Te - Tw, u)
+# butterfly
+"""plt.plot(Te - Tw, u)
 plt.show()
+"""
 
 """
 The number of ENSO events in 1000 years is: 248
