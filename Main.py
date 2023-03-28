@@ -2,29 +2,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
-# declaring constants
 
-A = 1.0
-B = 663.0
-C = 3.0
-T_star = 12.0
-u_star = -14.2
-delta_x = 7.5
 
 # making the vectorised differential equations
 
 def f(state, t):
     u, T_e, T_w = state
 
-    # setting up the 3 differential equations
+    # constants
+    A = 1.0
+    B = 663.0
+    C = 3.0
+    T_star = 12.0
+    u_star = -14.2
+    delta_x = 7.5
 
+    # setting up the 3 differential equations
     du = B / delta_x * (T_e - T_w) - C * (u - u_star) #  = du/dt
     dTe = u * T_w / (2 * delta_x) - A * (T_e - T_star) #  = dTe/dt
     dTw = -u * T_e / (2 * delta_x) - A * (T_w - T_star) #  = dTw/dt
 
-    return du, dTe, dTw 
+    return du, dTe, dTw
 
-dt = .00001 # resolution
+dt = .0001 # resolution
 
 t_start = 0 # this will allways be 0
 t_end = 100 # this will be for how many years we want to see this run # check 40 and 50
@@ -58,18 +58,19 @@ plt.show()
 """
 
 # function for taking the derivative of a function (symmetric derivative)
-def diff(func, x, dx): 
+def diff(func, x, dx):
     dfs = np.zeros(len(x) - 2)
     for i in range(1, len(x) - 1):
         dfs[i-1] = (func[i + 1] - func[i - 1]) / (2 * dx)
     return dfs
 
+#
 def make_func(list_func, x):
     return list_func[int(round(x/dt))]
 
 # fix single root finder (maybe doesnt sometimes work for decreasing derivatives)
-# function for root finding (bisection method) 
-def find_root(a, b, func): 
+# function for root finding (bisection method)
+def find_root(a, b, func):
     x1 = 0
     x2 = 0
     x3 = 0
@@ -104,9 +105,9 @@ def find_root(a, b, func):
 du = diff(u, t, dt)
 
 def func_u(x):
-    return make_func(u, x) # remove the / (sigfig * dt) possibly
+    return make_func(u, x)
 
-# idea: run the rootfinder of increments of .5 years in t to find roots, there will 
+# idea: run the rootfinder of increments of .5 years in t to find roots, there will
 # be spots in which there is no root but rootfinder should stop after a while
 # also notice that it looks like all maxima we care about are above y = 100
 
@@ -121,14 +122,14 @@ def iterate_find_root(dx ,start_step, end_step, increment, min_y, num_iterations
         for i in range(int(end_step / increment)):
             root = find_root(a, b, dx)
             a += increment
-            if type(root) == float: 
+            if type(root) == float:
                 if func_u(root) > min_y:
                     roots.append(root)
 
     # removes entries in roots which are very close to eachother in and makes a new set
+    roots.sort()
+    good_roots = roots
     if num_iterations > 0:
-        roots.sort()
-        good_roots = roots
         for i, root_1 in enumerate(roots):
             for root_2 in roots[i+1:]:
                 if root_2 - root_1 < .1:
@@ -136,13 +137,32 @@ def iterate_find_root(dx ,start_step, end_step, increment, min_y, num_iterations
 
     return good_roots
 
-roots = iterate_find_root(du, t_start, t_end, .01 , 100, 2)
+# new hopefully way simpler root solution to previous problem
+def find_maxima(list_func, increment, min_y):
+    maxima = []
+    step = increment / dt
+    a = 0
+    b = a + step
+    for i in range(int(len(list_func) / step)):
+        interval = list_func[int(a): int(b)].tolist()
+        print(interval)
+        max_val = max(interval)
+        max_val_index = interval.index(max_val)
+        a += step
+        if max_val > min_y:
+            maxima.append(t[max_val_index])
+            
+    return maxima
+
+
+#roots = iterate_find_root(du, t_start, t_end, .1 , 100, 2)
+roots = find_maxima(u, .5, 100)
 roots.sort()
 #print(roots)
 
 for i in range(len(roots)):
     plt.scatter(roots[i], func_u(roots[i]))
-   
+
 # code for single root finder
 
 """rot = find_root(83, 84, du)
@@ -152,7 +172,7 @@ plt.scatter(rot, func_u(rot))
 """
 
 # number of El-Nino events in the time run
-num_of_elNinos = len(roots) 
+num_of_elNinos = len(roots)
 print("The number of ENSO events in {} years is: {}".format(t_end, num_of_elNinos))
 
 # calculating the periods of time that elapses between the El-Nino events
