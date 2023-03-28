@@ -24,8 +24,8 @@ def f(state, t):
 dt = .0001 # resolution
 
 t_start = 0 # this will allways be 0
-t_want = 500 # the end value we care about 
-t_end = 2 * t_want # this will be for how many years this will run so that we can find all the roots 
+t_want = 200 # the end value we care about 
+t_end =  2 * t_want # this will be for how many years this will run so that we can find all the roots 
 
 t = np.arange(t_start, t_end, dt)
 state_0 = [10, 10, 14] # initial conditions
@@ -65,7 +65,10 @@ def diff(func, x, dx):
 
 # this will the numpy array into a something that work like a mathematical function
 def make_func(list_func, x):
-    return list_func[int(round(x/dt))]
+    if len(list_func) - 1 < int(round(x/dt)):
+        return list_func[-1]
+    else:
+        return list_func[int(round(x/dt))]
 
 # function for root finding (bisection method)
 def find_root(a, b, func):
@@ -117,7 +120,7 @@ def iterate_find_root(f, df ,start_step, end_step, increment, min_y, num_iterati
     for j in range(num_iterations):
         a = start_step + (j*increment)/num_iterations
         b = a + increment
-        for i in range(int(end_step / increment)):
+        for i in range(int(round(end_step / increment))):
             root = find_root(a, b, df)
             a += increment
             if type(root) == float:
@@ -127,7 +130,7 @@ def iterate_find_root(f, df ,start_step, end_step, increment, min_y, num_iterati
     # removes entries in roots which are very close to eachother in and makes a new set
     roots.sort()
     good_roots = roots
-    if num_iterations > 0:
+    if num_iterations > 1:
         for i, root_1 in enumerate(roots):
             for root_2 in roots[i+1:]:
                 if root_2 - root_1 < .1:
@@ -157,7 +160,7 @@ def find_maxima(list_func, increment, min_y):
     return maxima
 
 
-roots = iterate_find_root(u, du, t_start, t_end, .1 , 100, 2)
+roots = iterate_find_root(u, du, t_start, t_end, .1 , 100, 3)
 #roots = find_maxima(u, .5, 100)
 roots.sort()
 
@@ -225,4 +228,3 @@ plt.show()
 """plt.plot(Te - Tw, u)
 plt.show()
 """
-
