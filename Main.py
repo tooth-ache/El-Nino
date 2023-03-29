@@ -223,8 +223,4 @@ plt.xlabel("Time beteen ENSO events")
 plt.show()
 """
 
-# this is the beggining of your bit, just un-commment it out to run it
-# butterfly
-"""plt.plot(Te - Tw, u)
-plt.show()
-"""
+
