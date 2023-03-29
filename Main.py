@@ -196,7 +196,7 @@ def mean(mylist):
         my_sum += mylist[i]
     return my_sum / list_lenght
 
-# calculates the mean of a list of numbers
+# calculates the standard deviation of a list of numbers
 def standard_dev(mylist):
     list_length = len(mylist)
     my_sum = 0
