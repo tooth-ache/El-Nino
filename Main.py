@@ -222,5 +222,11 @@ plt.ylabel("Number of ENSO events")
 plt.xlabel("Time beteen ENSO events")
 plt.show()
 """
-
-
+# ADRISNANANA
+# plot of the fractal 8 figure thing
+plt.plot(u, Te - Tw)
+plt.title("Difference in Temp against current velocity".format(t_want))
+plt.xlabel("current velocity (1000 km / years)")
+plt.ylabel("T_e - T_w ")
+plt.ylim((-30,30))
+plt.show()
