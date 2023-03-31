@@ -2,17 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
-# making the vectorised differential equations
-def f(state, t):
+# in the first half, we show all of the functions we will use in the program because it think it will be easier to read.
+# Then we will have all of the plots and results we want to obtain in the second half.
+
+""" FIRST HALF: DECLARING FUNCTIONS """
+
+# making a function for the set of differential equations
+def system(state, t):
     u, T_e, T_w = state
 
-    # constants
-    A = 1.0
-    B = 663.0
-    C = 3.0
-    T_star = 12.0
-    u_star = -14.2
-    delta_x = 7.5
+    # constants, to the right of each constant i noted its original value
+    A = 1.0 # 1.0
+    B = 663.0 # 663.0
+    C = 3.0 # 3.0 
+    T_star = 12.0 # 12.0
+    u_star = -14.2 # -14.2
+    delta_x = 7.5 # 7.5
 
     # setting up the 3 differential equations
     du = B / delta_x * (T_e - T_w) - C * (u - u_star) #  = du/dt
@@ -21,41 +26,6 @@ def f(state, t):
 
     return du, dTe, dTw
 
-dt = .0001 # resolution
-
-t_start = 0 # this will allways be 0
-t_want = 200 # the end value we care about 
-t_end =  2 * t_want # this will be for how many years this will run so that we can find all the roots 
-
-t = np.arange(t_start, t_end, dt)
-state_0 = [10, 10, 14] # initial conditions
-y = odeint(f, state_0, t) # y is a list with elemets that are list with 3 entries containing u, Te, Tw for each time step
-
-# this corresponds to the functions u, Te, Tw which are function of time
-u = y[:,0]
-Te = y[:,1]
-Tw = y[:,2]
-
-# first plots
-
-plt.plot(t, u)
-plt.title("Current velocity against time ({} years)".format(t_want))
-plt.xlabel("Time t (years)")
-plt.ylabel("Current Velocity u ") # 10^3km / year  units?
-plt.ylim((-400,400))
-plt.xlim((0, t_want))
-plt.grid(axis = 'y')
-#plt.show()
-
-"""
-plt.plot(t, Te - Tw)
-plt.title("Difference in Temp against time ({} years)".format(t_want))
-plt.xlabel("Time t (years)")
-plt.ylabel("T_e - T_w ")
-plt.ylim((-30,30))
-plt.show()
-"""
-
 # function for taking the derivative of a function (symmetric derivative)
 def diff(func, x, dx):
     dfs = np.zeros(len(x) - 2)
@@ -63,9 +33,9 @@ def diff(func, x, dx):
         dfs[i-1] = (func[i + 1] - func[i - 1]) / (2 * dx)
     return dfs
 
-# this will the numpy array into a something that work like a mathematical function
+# this will turn the numpy array into a something that works like a mathematical function
 def make_func(list_func, x):
-    if len(list_func) - 1 < int(round(x/dt)):
+    if len(list_func) - 1 < int(round(x/dt)): # this bit makes sure that the 
         return list_func[-1]
     else:
         return list_func[int(round(x/dt))]
@@ -75,7 +45,7 @@ def find_root(a, b, func):
     x1 = 0
     x2 = 0
     x3 = 0
-    if a * b > 0:
+    if make_func(func, a) * make_func(func, b) > 0:
         x3 = "None" # im makeing the output a string if there is no root
         run = False
 
@@ -103,90 +73,33 @@ def find_root(a, b, func):
 
     return x3
 
-du = diff(u, t, dt)
-
-def func_u(x):
-    return make_func(u, x)
-
-# idea: run the rootfinder of increments of .5 years in t to find roots, there will
-# be spots in which there is no root but rootfinder should stop after a while
-# also notice that it looks like all maxima we care about are above y = 100
-
-# this function will run the bisection method on intervals of time to find all roots and the pick out the ones we want
-# currently this function below consistently decides to miss out on 2 to 6 roots for some reason and they are allways in the end
-# funny fix idea: run programm for more than you need and then just look at the values you care about
-def iterate_find_root(f, df ,start_step, end_step, increment, min_y, num_iterations):
+# sexy root finder
+def find_all_maxima(f, df, start_step, end_step, step_size, y_shift):
     roots = []
-    for j in range(num_iterations):
-        a = start_step + (j*increment)/num_iterations
-        b = a + increment
-        for i in range(int(round(end_step / increment))):
-            root = find_root(a, b, df)
-            a += increment
-            if type(root) == float:
-                if make_func(f, root) > min_y:
-                    roots.append(root)
+    brackets = []
+    a = start_step
+    b = a + step_size
+    brackets_start = 0
+    for i in range(int(end_step/step_size)):
+                
+        if (make_func(f, a) - y_shift) * (make_func(f, b) - y_shift) < 0:
+            if len(brackets) == 0:
+                if (make_func(f, a) - y_shift) > 0:
+                    brackets_start = 1
 
-    # removes entries in roots which are very close to eachother in and makes a new set
-    roots.sort()
-    good_roots = roots
-    if num_iterations > 1:
-        for i, root_1 in enumerate(roots):
-            for root_2 in roots[i+1:]:
-                if root_2 - root_1 < .1:
-                    good_roots.remove(root_2)
+            brackets.append(a)
 
-    return good_roots
+        a += step_size
+        b += step_size
 
-
-
-# piece of shit doesnt work fucking numpy arrays are not lists and wont turn into lists.
-def find_maxima(list_func, increment, min_y):
-    real_list_func = []
-    for i in range(len(list_func)):
-        real_list_func.append(float(list_func[i]))
-    maxima = []
-    step = int(increment / dt)
-    a = 0
-    b = a + step
-    for i in range(int(len(list_func) / step)):
-        small_interval = real_list_func[a:b]
-        max_val = max(small_interval)
-        max_val_index = small_interval.index(max_val)
-        a += step
-        if max_val > min_y:
-            maxima.append(t[max_val_index])
-            
-    return maxima
-
-
-roots = iterate_find_root(u, du, t_start, t_end, .1 , 100, 3)
-#roots = find_maxima(u, .5, 100)
-roots.sort()
-
-roots_wanted = [] # these roots are the ones we care about, which are from 0 to t_want
-for i in range(len(roots)):
-    if roots[i] <= t_want:
-        roots_wanted.append(roots[i])
-
-for i in range(len(roots_wanted)):
-    plt.scatter(roots_wanted[i], func_u(roots_wanted[i]))
-
-# code for single root finder
-"""root = find_root(83, 84, du)
-print(root)
-print(func_u(root))
-plt.scatter(root, func_u(rot))
-"""
-
-# number of El-Nino events in the time run
-num_of_elNinos = len(roots_wanted)
-print("The number of ENSO events in {} years is: {}".format(t_want, num_of_elNinos))
-
-# calculating the periods of time that elapses between the El-Nino events
-times_between_ENSO = [] # periods of time
-for i in range(num_of_elNinos - 1):
-    times_between_ENSO.append(roots_wanted[i+1] - roots_wanted[i]) # roots is sorted so dont need abs() function
+    for i in range(int(len(brackets) / 2)):
+        j = 2*i + brackets_start
+        a = brackets[j]
+        b = brackets[j + 1]
+        root = find_root(a, b, df)
+        roots.append(root)
+    
+    return roots
 
 # calculates the average of a list of numbers
 def mean(mylist):
@@ -203,24 +116,91 @@ def standard_dev(mylist):
     average = mean(mylist)
     for i in range(list_length):
         my_sum += (mylist[i] - average)**2
+
     return np.sqrt(my_sum/list_length)
 
-# to ignore the first 10 events repace times_between_ENSO with times_between_ENSO[11:]
-average_T = mean(times_between_ENSO)
-dev_T = standard_dev(times_between_ENSO)
-print("The mean time between ENSO events is: {} years".format(average_T))
-print("The standard deviation of ENSO events is: {}".format(dev_T))
 
+""" SECOND HALF: OBTAINING RESULTS """
+
+
+dt = .01 # resolution
+t_start = 0 # this will allways be 0
+t_end = 200 # the maximum value of time 
+
+t = np.arange(t_start, t_end, dt)
+state_0 = [10, 10, 14] # initial conditions
+y = odeint(system, state_0, t) # y is a list with elemets that are list with 3 entries containing u, Te, Tw for each time step
+
+# this corresponds to the functions u, Te, Tw which are function of time
+u = y[:,0]
+Te = y[:,1]
+Tw = y[:,2]
+
+# first plots
+
+plt.plot(t, u)
+plt.title("Current velocity against time ({} years)".format(t_end))
+plt.xlabel("Time t (years)")
+plt.ylabel("Current Velocity u ") # 10^3km / year  units?
+plt.ylim((-400,400))
+plt.xlim((0, t_end))
+plt.grid(axis = 'y')
+#plt.show()
+
+"""
+plt.plot(t, Te - Tw)
+plt.title("Difference in Temp against time ({} years)".format(t_end))
+plt.xlabel("Time t (years)")
+plt.ylabel("T_e - T_w ")
+plt.ylim((-30,30))
+plt.show()
+"""
+
+du = diff(u, t, dt) # calculating derivative of u
 # this will plot the derivative of u
 #plt.plot(t[1:-1], du, "--")
-plt.show()
 
-# histgram plot make nicer
+roots = find_all_maxima(u, du, t_start, t_end, .1, 100) # finding all the 
+
+# code for single root finder
+"""root = find_root(83, 84, du)
+print(root)
+print(func_u(root))
+plt.scatter(root, func_u(rot))
 """
-plt.hist(times_between_ENSO, bins= 30)
+
+# number of El-Nino events in the time run
+num_of_elNinos = len(roots)
+print("The number of ENSO events in {} years is: {}".format(t_end, num_of_elNinos))
+
+# calculating the periods of time that elapses between the El-Nino events
+times_between_ENSO = [] # periods of time
+for i in range(num_of_elNinos - 1):
+    times_between_ENSO.append(roots[i+1] - roots[i]) # roots is sorted so dont need abs() function
+
+# finding the mean, and standard deviations (igonring the first 10 ENSO events)
+average_T = mean(times_between_ENSO[10:])
+dev_T = standard_dev(times_between_ENSO[10:])
+print("The mean time between ENSO events (ignoring the first 10) is: {} years".format(average_T))
+print("The standard deviation of ENSO events (ignoring the first 10) is: {}".format(dev_T))
+
+# this will mark all the maxima in the list of roots on the graph
+for i in range(len(roots)):
+    plt.scatter(roots[i], make_func(u, roots[i]))
+
+# histogram plot make nicer
+"""plt.hist(times_between_ENSO, bins= 30)
 plt.ylabel("Number of ENSO events")
 plt.xlabel("Time beteen ENSO events")
-plt.show()
-"""
+plt.show()"""
 
+# ADRISNANANA
+# plot of the fractal 8 figure thing
+"""plt.plot(u, Te - Tw)
+plt.title("Difference in Temp against current velocity".format(t_end))
+plt.xlabel("current velocity (1000 km / years)")
+plt.ylabel("T_e - T_w ")
+plt.ylim((-30,30))
+plt.show()"""
 
+plt.show() 
