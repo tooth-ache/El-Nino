@@ -203,4 +203,13 @@ plt.ylabel("T_e - T_w ")
 plt.ylim((-30,30))
 plt.show()"""
 
-plt.show() 
+plt.show()
+
+"""# plot of ti against ti+10, ignoring the first 10 events
+plt.plot(times_between_ENSO[10:-10], times_between_ENSO[20:])
+plt.title("Ti vs T(i+10)")
+plt.xlabel("T(i+10)")
+plt.ylabel("Ti")
+plt.show()
+# correlation = stairs
+# if uncorrelated, graph would have no distinguishable pattern"""
